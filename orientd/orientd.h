@@ -6,7 +6,7 @@
 #define __NR_set_orientation 326
 
 struct dev_orientation {
-	int azimuth; /* angle between the magnetic north and the Y axis, around
+	int azimuth; /* rotation around
 		      * the X axis (-180<=azimuth<180)
 		      */
 	int pitch;   /* rotation around the Y-axis: -90<=pitch<=90 */
