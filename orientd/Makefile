@@ -5,8 +5,8 @@ INCLUDE = ./include
 LDLIBS = ./lib
 EXTRALIBS = -lc -lhardware
 
-CFLAGS = -Wall -Werror -g -O2 -I$(INCLUDE)
-LDFLAGS = -L$(LDLIBS) $(EXTRALIBS)
+CFLAGS = -Wall -Werror -g -O2 -I$(INCLUDE) -fPIE
+LDFLAGS = -L$(LDLIBS) $(EXTRALIBS) -pie -fPIE
 
 orientd: orientd.o
 	$(LD) $^ -o $@ $(LDFLAGS)
