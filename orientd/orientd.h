@@ -7,10 +7,10 @@
 
 struct dev_orientation {
 	int azimuth; /* angle between the magnetic north and the Y axis, around
-		      * the Z axis (-180<=azimuth<180)
+		      * the X axis (-180<=azimuth<180)
 		      */
-	int pitch;   /* rotation around the X-axis: -90<=pitch<=90 */
-	int roll;    /* rotation around Y-axis: +Y == -roll, -180<=roll<=180 */
+	int pitch;   /* rotation around the Y-axis: -90<=pitch<=90 */
+	int roll;    /* rotation around Z-axis: +Y == -roll, -180<=roll<=180 */
 };
 
 /* syscall wrapper */
