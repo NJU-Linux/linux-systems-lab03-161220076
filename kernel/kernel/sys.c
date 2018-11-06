@@ -4,6 +4,8 @@
  *  Copyright (C) 1991, 1992  Linus Torvalds
  */
 
+#include <linux/orientd.h>
+#include <linux/linkage.h>
 #include <linux/export.h>
 #include <linux/mm.h>
 #include <linux/utsname.h>
@@ -2605,3 +2607,10 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 	return 0;
 }
 #endif /* CONFIG_COMPAT */
+
+asmlinkage int sys_set_orientation(struct dev_orientation *orient)
+{
+	printk(KERN_INFO "In set orientation\n");
+	return 110808;
+}
+

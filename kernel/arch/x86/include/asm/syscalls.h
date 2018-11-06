@@ -14,11 +14,13 @@
 #include <linux/linkage.h>
 #include <linux/signal.h>
 #include <linux/types.h>
+#include <linux/orientd.h>
 
 /* Common in X86_32 and X86_64 */
 /* kernel/ioport.c */
 asmlinkage long sys_ioperm(unsigned long, unsigned long, int);
 asmlinkage long sys_iopl(unsigned int);
+asmlinkage int  sys_set_orientation(struct dev_orientation *orient);
 
 /* kernel/ldt.c */
 asmlinkage long sys_modify_ldt(int, void __user *, unsigned long);
