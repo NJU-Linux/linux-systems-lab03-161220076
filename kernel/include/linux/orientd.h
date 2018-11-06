@@ -1,7 +1,7 @@
 #ifndef _ORIENTD_H
 #define _ORIENTD_H
 
-#include <unistd.h>
+#include <asm/unistd.h>
 
 #define __NR_set_orientation 326
 
@@ -16,7 +16,8 @@ struct dev_orientation {
 /* syscall wrapper */
 static inline int set_orientation(struct dev_orientation *orient)
 {
-	return syscall(__NR_set_orientation, orient);
+	//return syscall(__NR_set_orientation, orient);
+	return 1;
 }
 
 #endif /* _ORIENTD_H */
