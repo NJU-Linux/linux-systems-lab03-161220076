@@ -2,6 +2,7 @@
 #define _ORIENTD_H
 
 #include <asm/unistd.h>
+#include <asm-generic/syscall.h>
 
 #define __NR_set_orientation 326
 
