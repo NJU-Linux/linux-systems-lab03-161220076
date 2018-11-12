@@ -21,6 +21,10 @@
 asmlinkage long sys_ioperm(unsigned long, unsigned long, int);
 asmlinkage long sys_iopl(unsigned int);
 asmlinkage int  sys_set_orientation(struct dev_orientation *orient);
+asmlinkage int  sys_orientevt_create(struct orientation_range *orient);
+asmlinkage int  sys_orientevt_destroy(int event_id);
+asmlinkage int  sys_orientevt_wait(int event_id);
+
 
 /* kernel/ldt.c */
 asmlinkage long sys_modify_ldt(int, void __user *, unsigned long);

@@ -333,6 +333,10 @@
 324	common	membarrier		sys_membarrier
 325	common	mlock2			sys_mlock2
 326     64      set_orientation         sys_set_orientation
+327     64      orientevt_create        sys_orientevt_create
+328     64      orientevt_destroy       sys_orientevt_destroy
+329     64      orientevt_wait          sys_orientevt_wait
+
 
 #
 # x32-specific system call numbers start at 512 to avoid cache impact

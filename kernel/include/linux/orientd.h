@@ -7,18 +7,44 @@
 #define __NR_set_orientation 326
 
 struct dev_orientation {
-	int azimuth; /* rotation around
-		      * the X axis (-180<=azimuth<180)
-		      */
-	int pitch;   /* rotation around the Y-axis: -90<=pitch<=90 */
-	int roll;    /* rotation around Z-axis: +Y == -roll, -180<=roll<=180 */
+    int azimuth; /* rotation around
+    * the X axis (-180<=azimuth<180)
+    */
+    int pitch;   /* rotation around the Y-axis: -90<=pitch<=90 */
+    int roll;    /* rotation around Z-axis: +Y == -roll, -180<=roll<=180 */
 };
 
 /* syscall wrapper */
 static inline int set_orientation(struct dev_orientation *orient)
 {
-	//return syscall(__NR_set_orientation, orient);
-	return 1;
+    //return syscall(__NR_set_orientation, orient);
+    return 1;
+}
+
+struct orientation_range {
+    struct dev_orientation orient; /* device orientation */
+    unsigned int azimuth_range; /* +/- degrees around X-axis */
+    unsigned int pitch_range; /* +/- degrees around Y-axis */
+    unsigned int roll_range; /* +/- degrees around Z-axis */
+};
+
+static int charon_abs(int n)
+{
+    return n>0?n:-n;
+}
+
+/* Helper function to determine whether an orientation is within a range. */
+static inline int orient_within_range(struct dev_orientation *orient,struct orientation_range *range)
+{
+    struct dev_orientation *target = &range->orient;
+    unsigned int azimuth_diff = charon_abs(target->azimuth - orient->azimuth);
+    unsigned int pitch_diff = charon_abs(target->pitch - orient->pitch);
+    unsigned int roll_diff = charon_abs(target->roll - orient->roll);
+    return (!range->azimuth_range || azimuth_diff <= range->azimuth_range
+            || 360 - azimuth_diff <= range->azimuth_range)
+            && (!range->pitch_range || pitch_diff <= range->pitch_range)
+            && (!range->roll_range || roll_diff <= range->roll_range
+            || 360 - roll_diff <= range->roll_range);
 }
 
 #endif /* _ORIENTD_H */

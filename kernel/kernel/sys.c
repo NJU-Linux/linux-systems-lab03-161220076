@@ -2614,15 +2614,48 @@ asmlinkage int sys_set_orientation(struct dev_orientation *orient)
 {
     int isChanged=0;
     if (sys_orient.azimuth!=orient->azimuth || 
-            sys_orient.pitch!=orient->pitch ||
-                sys_orient.roll!=orient->roll)
-        isChanged=1;
+        sys_orient.pitch!=orient->pitch ||
+        sys_orient.roll!=orient->roll)
+    isChanged=1;
     sys_orient.azimuth=orient->azimuth;
     sys_orient.pitch=orient->pitch;
     sys_orient.roll=orient->roll;
     if (isChanged)
     printk(KERN_INFO "system orientation has changed. azimuth:%d, pitch:%d, roll:%d\n",
-            sys_orient.azimuth,sys_orient.pitch,sys_orient.roll);
-    return 110808;
+           sys_orient.azimuth,sys_orient.pitch,sys_orient.roll);
+    return 11;
+}
+
+
+
+/*
+* Create a new orientation event using the specified orientation range.
+* Return an event_id on success and appropriate error on failure.
+* System call number 327.
+*/
+int sys_orientevt_create(struct orientation_range *orient){
+	return 12;
+}
+
+
+/*
+* Destroy an orientation event and notify any processes which are
+* currently blocked on the event to leave the event.
+* Return 0 on success and appropriate error on failure.
+* System call number 328.
+*/
+int sys_orientevt_destroy(int event_id){
+	return 13;
+}
+
+
+/*
+* Block a process until the given event_id is notified. Verify that the
+* event_id is valid.
+* Return 0 on success and appropriate error on failure.
+* System call number 329.
+*/
+int sys_orientevt_wait(int event_id){
+	return 14;
 }
 
