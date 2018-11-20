@@ -33,15 +33,15 @@ int main(int argc, char **argv)
     struct dev_orientation orientation;
 
     int i=0;
-    while (i<100) {
+    while (1) {
         if (poll_sensor_data(device, &orientation)) {
             printf("No data received!\n");
         } else {
-            printf("%d: azimuth = %d, pitch = %d, roll = %d",
-                   i,orientation.azimuth, orientation.pitch,
-                   orientation.roll);
-            int ret=set_orientation(&orientation);
-            printf("ret: %d\n",ret);
+            //printf("%d: azimuth = %d, pitch = %d, roll = %d",
+            //       i,orientation.azimuth, orientation.pitch,
+            //       orientation.roll);
+            set_orientation(&orientation);
+            //printf("ret: %d\n",ret);
         }
         usleep(100000);
         i++;

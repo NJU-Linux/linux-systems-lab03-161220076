@@ -2609,15 +2609,18 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 #endif /* CONFIG_COMPAT */
 
 static struct dev_orientation sys_orient; // store the orient of system
-static struct list_head *event_head;
+static struct list_head event_head=(struct list_head){ &(event_head), &(event_head) };
+static int curr_id=0;
 
+/* syscall number 326 */
 asmlinkage int sys_set_orientation(struct dev_orientation *orient)
 {
     int isChanged = 0;
     struct dev_orientation _orient;
     struct orient_event *evt;
+    //INIT_LIST_HEAD(&event_head);
     if (copy_from_user(&_orient, orient, sizeof(struct dev_orientation))){
-        printk(KERN_ERR "in sys_set_orientation, copy_from_user failed!\n");
+        printk(KERN_ERR "[DEBUG] in sys_set_orientation, copy_from_user failed!\n");
         return -EFAULT;
     }
     if (sys_orient.azimuth != _orient.azimuth ||
@@ -2628,10 +2631,10 @@ asmlinkage int sys_set_orientation(struct dev_orientation *orient)
     sys_orient.pitch = _orient.pitch;
     sys_orient.roll = _orient.roll;
     if (isChanged)
-        printk(KERN_INFO "system orientation has changed. azimuth:%d, pitch:%d, roll:%d\n",
+        printk(KERN_INFO "[DEBUG] system orientation has changed. azimuth:%d, pitch:%d, roll:%d\n",
                sys_orient.azimuth, sys_orient.pitch, sys_orient.roll);
 
-    list_for_each_entry(evt, event_head, list){
+    list_for_each_entry(evt, &event_head, list){
         if (orient_within_range(&sys_orient, &evt->o_range)){
             wake_up(&evt->wait_queue);
         }
@@ -2650,29 +2653,39 @@ asmlinkage int sys_orientevt_create(struct orientation_range *orient)
 {
     struct orient_event *event;
     struct orient_event *prev;
+    printk(KERN_INFO "[DEBUG] in create\n");
     if ((event = (struct orient_event *)kmalloc(sizeof(struct orient_event), GFP_KERNEL)) == NULL){
-        printk(KERN_ERR "kmalloc failed!\n");
+        printk(KERN_ERR "[DEBUG] kmalloc failed!\n");
         return -ENOMEM;
     }
+    printk(KERN_INFO "[DEBUG] in create1\n");
     if (copy_from_user(&event->o_range, orient, sizeof(struct orientation_range))){
-        printk(KERN_ERR "in sys_orientevt_create, copy_from_user failed!\n");
+        printk(KERN_ERR "[DEBUG] in sys_orientevt_create, copy_from_user failed!\n");
         return -EFAULT;
     }
+    printk(KERN_INFO "[DEBUG] in create2\n");
     INIT_LIST_HEAD(&event->list);
     init_waitqueue_head(&event->wait_queue);
     event->is_alive=1;
-    if (list_empty(event_head)){
-        event_head=&event->list;
-        event->id=0;
-    }
-    else {
-        list_add(&event->list, event_head);
-        if ((prev = list_prev_entry(event, list)) == NULL){
-            printk(KERN_ERR "in sys_orientevt_create, looking for prev failed!\n");
-            return -EFAULT;
-        }
-        event->id = prev->id + 1;
-    }
+    printk(KERN_INFO "[DEBUG] in create3\n");
+    //if (list_empty(event_head)){
+    //    event_head=&event->list;
+    //    event->id=0;
+    //}
+    //else {
+    list_add(&event->list, &event_head);
+    printk(KERN_INFO "[DEBUG] in create4\n");
+    //if ((prev = list_prev_entry(event, list)) == NULL)
+    //{
+    //    printk(KERN_ERR "[DEBUG] in sys_orientevt_create, looking for prev failed!\n");
+    //    return -EFAULT;
+    //}
+    //if (event->list.prev == &event_head)
+    //    event->id = 1;
+    //else
+    //    event->id = prev->id + 1;
+    //}
+    event->id=curr_id++;
     return event->id;
 }
 
@@ -2688,10 +2701,10 @@ asmlinkage int sys_orientevt_destroy(int event_id)
     struct orient_event *evt;
     if (copy_from_user(&id, &event_id, sizeof(int)))
     {
-        printk(KERN_ERR "in sys_orientevt_destory, copy from user failed!\n");
+        printk(KERN_ERR "[DEBUG] in sys_orientevt_destory, copy from user failed!\n");
         return -EFAULT;
     }
-    list_for_each_entry(evt, event_head, list){
+    list_for_each_entry(evt, &event_head, list){
         if (evt->id == id){
             list_del(&evt->list);
             evt->is_alive=0;
@@ -2712,17 +2725,30 @@ asmlinkage int sys_orientevt_wait(int event_id){
     int id;
     struct orient_event *evt;
     DEFINE_WAIT(wait);
-    if (copy_from_user(&id, &event_id, sizeof(int))){
-        printk(KERN_ERR "in sys_orientevt_wait, copy_from_user failed!\n");
-        return -EFAULT;
-    }
-    list_for_each_entry(evt, event_head, list){
-        if (id == evt->id){
+    //if (copy_from_user(&id, &event_id, sizeof(int))){
+    //    printk(KERN_ERR "[DEBUG] in sys_orientevt_wait, copy_from_user failed!\n");
+    //    return -EFAULT;
+    //}
+    id = event_id;
+    printk(KERN_INFO "[DEBUG], in wait2, id=%d\n", id);
+    list_for_each_entry(evt, &event_head, list)
+    {
+        printk(KERN_INFO "[DEBUG], in wait3, id=%d\n", id);
+        if (id == evt->id)
+        {
+            printk(KERN_INFO "[DEBUG], in wait4, id=%d\n", id);
             prepare_to_wait(&evt->wait_queue, &wait, TASK_INTERRUPTIBLE);
-            if (evt->is_alive == 1){
+            printk(KERN_INFO "[DEBUG], in wait5, id=%d\n", id);
+            if (evt->is_alive == 1)
+            {
+                printk(KERN_INFO "[DEBUG], in wait6, id=%d\n", id);
                 schedule();
+                printk(KERN_INFO "[DEBUG], in wait7, id=%d\n", id);
             }
+            printk(KERN_INFO "[DEBUG], in wait8, id=%d\n", id);
             finish_wait(&evt->wait_queue, &wait);
+            printk(KERN_INFO "[DEBUG], in wait9, id=%d\n", id);
+            break;
         }
     }
     return 0;
