@@ -2633,10 +2633,34 @@ asmlinkage int sys_set_orientation(struct dev_orientation *orient)
 * Return an event_id on success and appropriate error on failure.
 * System call number 327.
 */
-int sys_orientevt_create(struct orientation_range *orient){
-	return 12;
+asmlinkage int sys_orientevt_create(struct orientation_range *orient)
+{
+    struct orient_event *event;
+    event.is_alive=1;
+    if ((event = (struct orient_event *)kmalloc(sizeof(struct orient_event), GFP_KERNEL)) == NULL){
+        printk(KERN_ERR "kmalloc failed!\n");
+        return -EFAULT;
+    }
+    if (copy_from_user(&event.o_range, orient, sizeof(struct orientation_range))){
+        printk(KERN_ERR "in sys_orientevt_create, copy_from_user failed!\n");
+        return -EFAULT;
+    }
+    if (list_empty(event_head)){
+        INIT_LIST_HEAD(event.list);
+        event_head=&event.list;
+        event.id=0;
+    }
+    else {
+        list_add(&event.head, &event_head);
+        struct orient_event *prev;
+        if ((prev = list_prev_entry(event, head)) == NULL){
+            printk(KERN_ERR "in sys_orientevt_create, looking for prev failed!\n");
+            return -EFAULT;
+        }
+        event.id = prev->id + 1;
+    }
+    return event.id;
 }
-
 
 /*
 * Destroy an orientation event and notify any processes which are
@@ -2644,7 +2668,7 @@ int sys_orientevt_create(struct orientation_range *orient){
 * Return 0 on success and appropriate error on failure.
 * System call number 328.
 */
-int sys_orientevt_destroy(int event_id){
+asmlinkage int sys_orientevt_destroy(int event_id){
 	return 13;
 }
 
@@ -2655,7 +2679,7 @@ int sys_orientevt_destroy(int event_id){
 * Return 0 on success and appropriate error on failure.
 * System call number 329.
 */
-int sys_orientevt_wait(int event_id){
+asmlinkage int sys_orientevt_wait(int event_id){
 	return 14;
 }
 

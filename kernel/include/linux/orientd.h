@@ -28,10 +28,19 @@ struct orientation_range {
     unsigned int roll_range; /* +/- degrees around Z-axis */
 };
 
-static int charon_abs(int n)
+static inline int charon_abs(int n)
 {
     return n>0?n:-n;
 }
+
+struct orient_event{
+    unsigned int id;
+    int is_alive;  
+    struct orientation_range o_range;
+    struct list_head list;
+};
+
+struct list_head *event_head;
 
 /* Helper function to determine whether an orientation is within a range. */
 static inline int orient_within_range(struct dev_orientation *orient,struct orientation_range *range)
