@@ -2609,21 +2609,34 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 #endif /* CONFIG_COMPAT */
 
 static struct dev_orientation sys_orient; // store the orient of system
+static struct list_head *event_head;
 
 asmlinkage int sys_set_orientation(struct dev_orientation *orient)
 {
-    int isChanged=0;
-    if (sys_orient.azimuth!=orient->azimuth || 
-        sys_orient.pitch!=orient->pitch ||
-        sys_orient.roll!=orient->roll)
-    isChanged=1;
-    sys_orient.azimuth=orient->azimuth;
-    sys_orient.pitch=orient->pitch;
-    sys_orient.roll=orient->roll;
+    int isChanged = 0;
+    struct dev_orientation _orient;
+    struct orient_event *evt;
+    if (copy_from_user(&_orient, orient, sizeof(struct dev_orientation))){
+        printk(KERN_ERR "in sys_set_orientation, copy_from_user failed!\n");
+        return -EFAULT;
+    }
+    if (sys_orient.azimuth != _orient.azimuth ||
+        sys_orient.pitch != _orient.pitch ||
+        sys_orient.roll != _orient.roll)
+        isChanged = 1;
+    sys_orient.azimuth = _orient.azimuth;
+    sys_orient.pitch = _orient.pitch;
+    sys_orient.roll = _orient.roll;
     if (isChanged)
-    printk(KERN_INFO "system orientation has changed. azimuth:%d, pitch:%d, roll:%d\n",
-           sys_orient.azimuth,sys_orient.pitch,sys_orient.roll);
-    return 11;
+        printk(KERN_INFO "system orientation has changed. azimuth:%d, pitch:%d, roll:%d\n",
+               sys_orient.azimuth, sys_orient.pitch, sys_orient.roll);
+
+    list_for_each_entry(evt, event_head, list){
+        if (orient_within_range(&sys_orient, &evt->o_range)){
+            wake_up(&evt->wait_queue);
+        }
+    }
+    return 0;
 }
 
 
@@ -2636,30 +2649,31 @@ asmlinkage int sys_set_orientation(struct dev_orientation *orient)
 asmlinkage int sys_orientevt_create(struct orientation_range *orient)
 {
     struct orient_event *event;
-    event.is_alive=1;
+    struct orient_event *prev;
     if ((event = (struct orient_event *)kmalloc(sizeof(struct orient_event), GFP_KERNEL)) == NULL){
         printk(KERN_ERR "kmalloc failed!\n");
-        return -EFAULT;
+        return -ENOMEM;
     }
-    if (copy_from_user(&event.o_range, orient, sizeof(struct orientation_range))){
+    if (copy_from_user(&event->o_range, orient, sizeof(struct orientation_range))){
         printk(KERN_ERR "in sys_orientevt_create, copy_from_user failed!\n");
         return -EFAULT;
     }
+    INIT_LIST_HEAD(&event->list);
+    init_waitqueue_head(&event->wait_queue);
+    event->is_alive=1;
     if (list_empty(event_head)){
-        INIT_LIST_HEAD(event.list);
-        event_head=&event.list;
-        event.id=0;
+        event_head=&event->list;
+        event->id=0;
     }
     else {
-        list_add(&event.head, &event_head);
-        struct orient_event *prev;
-        if ((prev = list_prev_entry(event, head)) == NULL){
+        list_add(&event->list, event_head);
+        if ((prev = list_prev_entry(event, list)) == NULL){
             printk(KERN_ERR "in sys_orientevt_create, looking for prev failed!\n");
             return -EFAULT;
         }
-        event.id = prev->id + 1;
+        event->id = prev->id + 1;
     }
-    return event.id;
+    return event->id;
 }
 
 /*
@@ -2668,10 +2682,25 @@ asmlinkage int sys_orientevt_create(struct orientation_range *orient)
 * Return 0 on success and appropriate error on failure.
 * System call number 328.
 */
-asmlinkage int sys_orientevt_destroy(int event_id){
-	return 13;
+asmlinkage int sys_orientevt_destroy(int event_id)
+{
+    int id;
+    struct orient_event *evt;
+    if (copy_from_user(&id, &event_id, sizeof(int)))
+    {
+        printk(KERN_ERR "in sys_orientevt_destory, copy from user failed!\n");
+        return -EFAULT;
+    }
+    list_for_each_entry(evt, event_head, list){
+        if (evt->id == id){
+            list_del(&evt->list);
+            evt->is_alive=0;
+            kfree(evt);
+            return 0;
+        }
+    }
+    return -EFAULT;   // not found
 }
-
 
 /*
 * Block a process until the given event_id is notified. Verify that the
@@ -2680,6 +2709,21 @@ asmlinkage int sys_orientevt_destroy(int event_id){
 * System call number 329.
 */
 asmlinkage int sys_orientevt_wait(int event_id){
-	return 14;
+    int id;
+    struct orient_event *evt;
+    DEFINE_WAIT(wait);
+    if (copy_from_user(&id, &event_id, sizeof(int))){
+        printk(KERN_ERR "in sys_orientevt_wait, copy_from_user failed!\n");
+        return -EFAULT;
+    }
+    list_for_each_entry(evt, event_head, list){
+        if (id == evt->id){
+            prepare_to_wait(&evt->wait_queue, &wait, TASK_INTERRUPTIBLE);
+            if (evt->is_alive == 1){
+                schedule();
+            }
+            finish_wait(&evt->wait_queue, &wait);
+        }
+    }
+    return 0;
 }
-

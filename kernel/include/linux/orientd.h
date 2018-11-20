@@ -3,6 +3,9 @@
 
 #include <asm/unistd.h>
 #include <asm-generic/syscall.h>
+#include <linux/wait.h>
+#include <linux/list.h>
+#include <linux/types.h>
 
 #define __NR_set_orientation 326
 
@@ -38,9 +41,11 @@ struct orient_event{
     int is_alive;  
     struct orientation_range o_range;
     struct list_head list;
+    wait_queue_head_t wait_queue;
 };
 
-struct list_head *event_head;
+
+//static struct dev_orientation sys_orient; // store the orient of system
 
 /* Helper function to determine whether an orientation is within a range. */
 static inline int orient_within_range(struct dev_orientation *orient,struct orientation_range *range)
