@@ -59,13 +59,13 @@ int main(int argc, char **argv)
     /* +/-5 degrees for error, roll error does not matter because it can rotate */
     struct orientation_range orient_r = {orient_facedown, 5, 5, 0};
     printf("[DEBUG] facedown test begin");
-    //int event_id = orientevt_create(&orient_r);
-    //printf("[DEBUG], event_id=%d\n",event_id);
-    //if (event_id < 0)
-    //{
-    //    printf("orientevt_create failed.\n");
-    //    return EXIT_FAILURE;
-    // }
+    int event_id = orientevt_create(&orient_r);
+    printf("[DEBUG], event_id=%d\n",event_id);
+    if (event_id < 0)
+    {
+        printf("orientevt_create failed.\n");
+        return EXIT_FAILURE;
+    }
 
     for (int i = 0; i < children_count; i++)
     {
@@ -74,16 +74,18 @@ int main(int argc, char **argv)
         if (pid < 0)
         {
             printf("fork failed\n");
-            //orientevt_destroy(event_id);
+            orientevt_destroy(event_id);
             exit(EXIT_FAILURE);
         }
         else if (pid == 0)
         {
-            int event_id = orientevt_create(&orient_r);
-            printf("[DEBUG], event_id=%d\n", event_id);
+            //int event_id = orientevt_create(&orient_r);
+            //printf("[DEBUG], event_id=%d\n", event_id);
             /* child: wait for orient event */
+            int count=0;
             while (1)
             {
+                printf("sec: %ds\n", count++);
                 int wait_ret = orientevt_wait(event_id);
                 printf("[DEBUG], wait_ret=%d\n",wait_ret);
                 if (wait_ret < 0)
@@ -113,8 +115,9 @@ int main(int argc, char **argv)
 
     sleep(parent_life_cycle);
 
+    printf("father process exiting\n");
     /* destroying the events to kill children */
-    //orientevt_destroy(event_id);
+    orientevt_destroy(event_id);
 
     return EXIT_SUCCESS;
 }

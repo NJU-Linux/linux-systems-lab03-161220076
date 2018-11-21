@@ -1,13 +1,3 @@
-/*
- * Columbia University
- * COMS W4118 Fall 2018
- * Homework 3 - orientd.h
- * teamN: UNI, UNI, UNI
- */
-
-#ifndef _FACEDOWN_H
-#define _FACEDOWN_H
-
 #include <unistd.h>
 
 #define __NR_orientevt_create 327
@@ -16,8 +6,8 @@
 
 struct dev_orientation {
   int azimuth; /* angle between the magnetic north and the Y axis, around
-		* the Z axis (-180<=azimuth<180)
-		*/
+		          * the Z axis (-180<=azimuth<180)
+		          */
   int pitch;   /* rotation around the X-axis: -90<=pitch<=90 */
   int roll;    /* rotation around Y-axis: +Y == -roll, -180<=roll<=180 */
 };
@@ -43,5 +33,3 @@ static inline int orientevt_wait(int event_id)
 {
   return syscall(__NR_orientevt_wait, event_id);
 }
-
-#endif /* _FACEDOWN_H */

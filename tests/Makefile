@@ -4,17 +4,24 @@ LD = $(NDK_PATH)/clang
 ########## YOUR MAKEFILE BELOW ##########
 INCLUDE = ./include
 LDLIBS = ./lib
-CFLAGS = -Wall -Werror -g -O2 -I$(INCLUDE)
-LDFLAGS = -L$(LDLIBS)
+CFLAGS = -Wall -Werror -g -O2 -I$(INCLUDE) -fPIE
+LDFLAGS = -L$(LDLIBS) -pie -fPIE
 
-all: face
+all: faceup facedown
 
-face: face.o
-	$(LD) $^ -fPIE -o $@ $(LDFLAGS)
+faceup: faceup.o
+	$(LD) $^ -o $@ $(LDFLAGS)
 
 
-face.o: face.c face.h
-	$(CC) -fPIE -c $(CFLAGS) $<
+faceup.o: faceup.c face.h
+	$(CC) -c $(CFLAGS) $<
+
+facedown: facedown.o
+	$(LD) $^ -o $@ $(LDFLAGS)
+
+
+facedown.o: facedown.c face.h
+	$(CC) -c $(CFLAGS) $<
 
 .PHONY: clean
 
