@@ -2721,7 +2721,6 @@ asmlinkage int sys_orientevt_wait(int event_id){
     DEFINE_WAIT(wait);
     id = event_id;
 
-    //read_lock(&lock);
     list_for_each_entry(evt, &event_head, list){
         if (id == evt->id){
             found=0;
@@ -2733,7 +2732,6 @@ asmlinkage int sys_orientevt_wait(int event_id){
             break;
         }
     }
-    //read_unlock(&lock);
 
     return found;
 }
