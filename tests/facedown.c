@@ -22,7 +22,6 @@ int main()
             else if (c_pid == 0){
                 for (int count = 0;; count++){
                     int event_wait = orientevt_wait(event_id[i]);
-                    printf("event_wait: %d\n",event_wait);
                     if (event_wait < 0){
                         printf("error occered when wait, father %d's %dth child process exiting\n", i, j);
                         return EXIT_FAILURE;

@@ -61,4 +61,4 @@ static inline int orient_within_range(struct dev_orientation *orient,struct orie
             || 360 - roll_diff <= range->roll_range);
 }
 
-#endif /* _ORIENTD_H */
+#endif

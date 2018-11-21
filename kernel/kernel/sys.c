@@ -2608,10 +2608,10 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 }
 #endif /* CONFIG_COMPAT */
 
-static struct dev_orientation sys_orient; // store the orient of system
+static struct dev_orientation sys_orient;                 // store the orient of system
 static struct list_head event_head=(struct list_head){ &(event_head), &(event_head) };
 static int curr_id=0;
-static DEFINE_RWLOCK(lock);
+static DEFINE_RWLOCK(lock);            // define rw lock
 
 /* syscall number 326 */
 asmlinkage int sys_set_orientation(struct dev_orientation *orient)
@@ -2639,7 +2639,7 @@ asmlinkage int sys_set_orientation(struct dev_orientation *orient)
                sys_orient.azimuth, sys_orient.pitch, sys_orient.roll);
 
     read_lock(&lock);
-    list_for_each_entry(evt, &event_head, list){
+    list_for_each_entry(evt, &event_head, list){                        // 遍历队列中事件，并唤醒符合条件的事件
         if (orient_within_range(&sys_orient, &evt->o_range)){
             wake_up(&evt->wait_queue);
         }
@@ -2673,7 +2673,7 @@ asmlinkage int sys_orientevt_create(struct orientation_range *orient)
     INIT_LIST_HEAD(&event->list);
     init_waitqueue_head(&event->wait_queue);
     event->is_alive=1;
-    list_add(&event->list, &event_head);
+    list_add(&event->list, &event_head);                  // 将新事件添加到队列中
     event->id=curr_id++;
     write_unlock(&lock);
 
@@ -2696,7 +2696,7 @@ asmlinkage int sys_orientevt_destroy(int event_id)
     list_for_each_entry(evt, &event_head, list){
         if (evt->id == id){
             evt->is_alive=0;
-            list_del(&evt->list);
+            list_del(&evt->list);         // 删除事件
             kfree(evt);
             write_unlock(&lock);
             printk(KERN_INFO "[DEBUG] in sys_orientevt_destory, event %d destoried\n", id);
