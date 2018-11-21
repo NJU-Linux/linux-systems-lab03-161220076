@@ -2611,6 +2611,7 @@ COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
 static struct dev_orientation sys_orient; // store the orient of system
 static struct list_head event_head=(struct list_head){ &(event_head), &(event_head) };
 static int curr_id=0;
+static DEFINE_RWLOCK(lock);
 
 /* syscall number 326 */
 asmlinkage int sys_set_orientation(struct dev_orientation *orient)
@@ -2626,18 +2627,25 @@ asmlinkage int sys_set_orientation(struct dev_orientation *orient)
         sys_orient.pitch != _orient.pitch ||
         sys_orient.roll != _orient.roll)
         isChanged = 1;
+
+    write_lock(&lock);
     sys_orient.azimuth = _orient.azimuth;
     sys_orient.pitch = _orient.pitch;
     sys_orient.roll = _orient.roll;
+    write_unlock(&lock);
+
     if (isChanged)
         printk(KERN_INFO "[DEBUG] system orientation has changed. azimuth:%d, pitch:%d, roll:%d\n",
                sys_orient.azimuth, sys_orient.pitch, sys_orient.roll);
 
+    read_lock(&lock);
     list_for_each_entry(evt, &event_head, list){
         if (orient_within_range(&sys_orient, &evt->o_range)){
             wake_up(&evt->wait_queue);
         }
     }
+    read_unlock(&lock);
+
     return 0;
 }
 
@@ -2660,12 +2668,15 @@ asmlinkage int sys_orientevt_create(struct orientation_range *orient)
         printk(KERN_ERR "[DEBUG] in sys_orientevt_create, copy_from_user failed!\n");
         return -EFAULT;
     }
+
+    write_lock(&lock);
     INIT_LIST_HEAD(&event->list);
     init_waitqueue_head(&event->wait_queue);
     event->is_alive=1;
     list_add(&event->list, &event_head);
-    printk(KERN_INFO "[DEBUG] in create4\n");
     event->id=curr_id++;
+    write_unlock(&lock);
+
     return event->id;
 }
 
@@ -2680,15 +2691,20 @@ asmlinkage int sys_orientevt_destroy(int event_id)
     int id;
     struct orient_event *evt;
     id = event_id;
+
+    write_lock(&lock);
     list_for_each_entry(evt, &event_head, list){
         if (evt->id == id){
             evt->is_alive=0;
             list_del(&evt->list);
             kfree(evt);
+            write_unlock(&lock);
             printk(KERN_INFO "[DEBUG] in sys_orientevt_destory, event %d destoried\n", id);
             return 0;
         }
     }
+    write_unlock(&lock);
+
     return -EFAULT;   // not found
 }
 
@@ -2704,6 +2720,8 @@ asmlinkage int sys_orientevt_wait(int event_id){
     int found=1;
     DEFINE_WAIT(wait);
     id = event_id;
+
+    //read_lock(&lock);
     list_for_each_entry(evt, &event_head, list){
         if (id == evt->id){
             found=0;
@@ -2715,5 +2733,7 @@ asmlinkage int sys_orientevt_wait(int event_id){
             break;
         }
     }
+    //read_unlock(&lock);
+
     return found;
 }

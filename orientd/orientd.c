@@ -32,7 +32,6 @@ int main(int argc, char **argv)
     /* Replace demo code with your daemon */
     struct dev_orientation orientation;
 
-    int i=0;
     while (1) {
         if (poll_sensor_data(device, &orientation)) {
             printf("No data received!\n");
@@ -44,7 +43,6 @@ int main(int argc, char **argv)
             //printf("ret: %d\n",ret);
         }
         usleep(100000);
-        i++;
     }
     /*********** Demo code ends ***********/
 
